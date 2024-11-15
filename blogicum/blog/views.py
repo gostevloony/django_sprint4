@@ -1,6 +1,3 @@
-from blog.forms import CommentForm, PostForm
-from blog.models import Category, Comment, Post, User
-from constants import PAGE_NUMBER, POST_ORDER
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.db.models import Count
 from django.http import Http404
@@ -9,6 +6,10 @@ from django.urls import reverse, reverse_lazy
 from django.utils import timezone
 from django.views.generic import (CreateView, DeleteView, DetailView, ListView,
                                   UpdateView)
+
+from blog.forms import CommentForm, PostForm
+from blog.models import Category, Comment, Post, User
+from constants import PAGE_NUMBER, POST_ORDER
 
 
 class PostListView(ListView):
@@ -67,7 +68,7 @@ class CategoryListView(ListView):
         return Post.objects.prefetch_related(
             'category', 'location', 'author'
         ).filter(
-            category__slug=self.kwargs['category_slug'],
+            category__slug=self.kwargs[self.slug_url_kwarg],
             pub_date__lte=timezone.now(),
             is_published=True, category__is_published=True
         ).annotate(comment_count=Count('comments')).order_by(POST_ORDER)
@@ -214,5 +215,3 @@ class CommentUpdateView(CommentUpdateDeleteMixin, UpdateView):
 
 class CommentDeleteView(CommentUpdateDeleteMixin, DeleteView):
     """Удаление комментария"""
-
-    pass

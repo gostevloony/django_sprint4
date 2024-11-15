@@ -1,6 +1,9 @@
 from django.contrib import admin
+from django.contrib.auth.models import Group
 
-from .models import Category, Location, Post
+from .models import Category, Comment, Location, Post
+
+admin.site.unregister(Group)
 
 
 class PostInline(admin.TabularInline):
@@ -51,4 +54,14 @@ class CategoryAdmin(admin.ModelAdmin):
     )
     list_editable = (
         'is_published',
+    )
+
+
+@admin.register(Comment)
+class CategoryAdmin(admin.ModelAdmin):
+    list_display = (
+        'text',
+        'author',
+        'post',
+        'created_at'
     )

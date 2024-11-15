@@ -1,10 +1,11 @@
 from datetime import datetime
 
-from constants import TITLE_MAX_LENGTH
-from core.models import PublCreateModel
 from django.contrib.auth import get_user_model
 from django.db import models
 from django.urls import reverse
+
+from constants import TITLE_MAX_LENGTH
+from core.models import PublCreateModel, PublPublishedModel
 
 User = get_user_model()
 
@@ -18,7 +19,7 @@ class PostPubManager(models.Manager):
         )
 
 
-class Post(PublCreateModel):
+class Post(PublPublishedModel):
     title = models.CharField('Заголовок', max_length=TITLE_MAX_LENGTH)
     text = models.TextField('Текст')
     pub_date = models.DateTimeField(
@@ -62,7 +63,7 @@ class Post(PublCreateModel):
         return reverse('blog:post_detail', args=(self.pk,))
 
 
-class Category(PublCreateModel):
+class Category(PublPublishedModel):
     title = models.CharField(
         max_length=TITLE_MAX_LENGTH,
         verbose_name='Заголовок'
@@ -83,7 +84,7 @@ class Category(PublCreateModel):
         return self.title
 
 
-class Location(PublCreateModel):
+class Location(PublPublishedModel):
     name = models.CharField(
         max_length=TITLE_MAX_LENGTH,
         verbose_name='Название места'
