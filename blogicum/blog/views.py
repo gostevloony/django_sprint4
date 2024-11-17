@@ -2,18 +2,13 @@ from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.shortcuts import get_object_or_404
 from django.urls import reverse, reverse_lazy
 from django.utils import timezone
-from django.views.generic import (CreateView, DeleteView, DetailView, ListView,
-                                  UpdateView)
+from django.views.generic import (CreateView, DeleteView, DetailView,
+                                  ListView, UpdateView)
 
 from blog.forms import CommentForm, PostForm
 from blog.models import Category, Comment, Post, User
 from constants import PAGE_NUMBER
 from core.utils import get_published_objects
-
-
-class TestAuthorMixin(UserPassesTestMixin):
-    def test_func(self):
-        return self.get_object().author == self.request.user
 
 
 class PostListView(ListView):
@@ -91,6 +86,11 @@ class PostCreateView(LoginRequiredMixin, CreateView):
             'blog:profile',
             kwargs={'username': self.request.user.username}
         )
+
+
+class TestAuthorMixin(UserPassesTestMixin):
+    def test_func(self):
+        return self.get_object().author == self.request.user
 
 
 class PostUpdateDeleteView(TestAuthorMixin):

@@ -1,9 +1,8 @@
-from django.utils import timezone
-
 from django.contrib.auth import get_user_model
 from django.db import models
 from django.db.models import Count
 from django.urls import reverse
+from django.utils import timezone
 
 from constants import POST_ORDER, TITLE_MAX_LENGTH
 from core.models import PublCreateModel, PublPublishedModel
