@@ -1,6 +1,5 @@
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
-from django.http import Http404
-from django.shortcuts import get_object_or_404, redirect
+from django.shortcuts import get_object_or_404
 from django.urls import reverse, reverse_lazy
 from django.utils import timezone
 from django.views.generic import (CreateView, DeleteView, DetailView, ListView,
@@ -12,8 +11,9 @@ from constants import PAGE_NUMBER
 from core.utils import get_published_objects
 
 
-# class TestAuthorMixin(UserPassesTestMixin):
-
+class TestAuthorMixin(UserPassesTestMixin):
+    def test_func(self):
+        return self.get_object().author == self.request.user
 
 
 class PostListView(ListView):
@@ -34,16 +34,14 @@ class PostDetailView(DetailView):
     template_name = 'blog/detail.html'
     pk_url_kwarg = 'post_id'
 
-    def dispatch(self, request, *args, **kwargs):
-        # object = self.get_object()
-        instance = get_object_or_404(Post, pk=kwargs['post_id'])
-        if (
-            (not instance.is_published or not instance.category.is_published
-             or instance.pub_date > timezone.now())
-            and instance.author != request.user
-        ):
-            raise Http404('Страница не найдена')
-        return super().dispatch(request, *args, **kwargs)
+    def get_queryset(self):
+        return (
+            super()
+            .get_queryset()
+            .prefetch_related(
+                'comments',
+            )
+        )
 
     def get_context_data(self, **kwargs):
         return dict(
@@ -95,18 +93,12 @@ class PostCreateView(LoginRequiredMixin, CreateView):
         )
 
 
-class PostUpdateDeleteView(LoginRequiredMixin):
+class PostUpdateDeleteView(TestAuthorMixin):
     """Миксин для редактирования и удаления публикации"""
 
     model = Post
     pk_url_kwarg = 'post_id'
     template_name = 'blog/create.html'
-
-    def dispatch(self, request, *args, **kwargs):
-        obj = self.get_object()
-        if obj.author != self.request.user:
-            return redirect('blog:post_detail', obj.pk)
-        return super().dispatch(request, *args, **kwargs)
 
 
 class PostUpdateView(PostUpdateDeleteView, UpdateView):
@@ -130,8 +122,16 @@ class ProfileView(ListView):
     template_name = 'blog/profile.html'
 
     def get_queryset(self):
-        author = get_object_or_404(User, username=self.kwargs['username'])
-        return Post.postpub.count_comment().filter(author=author).order()
+        author = get_object_or_404(
+            User,
+            username=self.kwargs[self.slug_url_kwarg]
+        )
+        queryset = super().get_queryset().filter(author=author)
+        if author.id != self.request.user.id:
+            queryset = Post.postpub.published(
+            ).exclude(pub_date__gt=timezone.now()
+                      ).filter(author=author).count_comment().order()
+        return queryset
 
     def get_context_data(self, **kwargs):
         return dict(
@@ -179,7 +179,7 @@ class CommentCreateView(LoginRequiredMixin, CreateView):
         )
 
 
-class CommentUpdateDeleteMixin(UserPassesTestMixin):
+class CommentUpdateDeleteMixin(TestAuthorMixin):
     """Миксин для редактирования и удаления комментария"""
 
     model = Comment
@@ -191,10 +191,6 @@ class CommentUpdateDeleteMixin(UserPassesTestMixin):
             'blog:post_detail',
             kwargs={'post_id': self.kwargs['post_id']}
         )
-
-    def test_func(self):
-        object = self.get_object()
-        return object.author == self.request.user
 
 
 class CommentUpdateView(CommentUpdateDeleteMixin, UpdateView):

@@ -1,4 +1,4 @@
-from datetime import datetime
+from django.utils import timezone
 
 from django.contrib.auth import get_user_model
 from django.db import models
@@ -16,7 +16,7 @@ class PostQueryset(models.QuerySet):
         return self.filter(
             is_published=True,
             category__is_published=True,
-            pub_date__lt=datetime.now()
+            pub_date__lt=timezone.now()
         ).select_related('category', 'location', 'author')
 
     def count_comment(self):
