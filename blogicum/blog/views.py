@@ -1,5 +1,5 @@
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
-from django.shortcuts import get_object_or_404
+from django.shortcuts import get_object_or_404, redirect
 from django.urls import reverse, reverse_lazy
 from django.utils import timezone
 from django.views.generic import (CreateView, DeleteView, DetailView,
@@ -9,6 +9,17 @@ from blog.forms import CommentForm, PostForm
 from blog.models import Category, Comment, Post, User
 from constants import PAGE_NUMBER
 from core.utils import get_published_objects
+
+
+class TestAuthorMixin(UserPassesTestMixin):
+    def test_func(self):
+        return self.get_object().author == self.request.user
+
+    def handle_no_permission(self):
+        return redirect(
+            "blog:post_detail",
+            post_id=self.kwargs['post_id']
+        )
 
 
 class PostListView(ListView):
@@ -28,6 +39,15 @@ class PostDetailView(DetailView):
     model = Post
     template_name = 'blog/detail.html'
     pk_url_kwarg = 'post_id'
+
+    def get_object(self):
+        post_obj = super().get_object()
+        if post_obj.author != self.request.user:
+            return get_object_or_404(
+                Post.postpub.published(),
+                pk=self.kwargs[self.pk_url_kwarg]
+            )
+        return post_obj
 
     def get_queryset(self):
         return (
@@ -86,11 +106,6 @@ class PostCreateView(LoginRequiredMixin, CreateView):
             'blog:profile',
             kwargs={'username': self.request.user.username}
         )
-
-
-class TestAuthorMixin(UserPassesTestMixin):
-    def test_func(self):
-        return self.get_object().author == self.request.user
 
 
 class PostUpdateDeleteView(TestAuthorMixin):
