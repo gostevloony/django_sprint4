@@ -5,10 +5,8 @@ from django.db import models
 from django.db.models import Count
 from django.urls import reverse
 
-from constants import TITLE_MAX_LENGTH
+from constants import POST_ORDER, TITLE_MAX_LENGTH
 from core.models import PublCreateModel, PublPublishedModel
-
-from constants import POST_ORDER
 
 User = get_user_model()
 
