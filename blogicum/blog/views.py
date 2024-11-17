@@ -9,6 +9,7 @@ from django.views.generic import (CreateView, DeleteView, DetailView, ListView,
 from blog.forms import CommentForm, PostForm
 from blog.models import Category, Comment, Post, User
 from constants import PAGE_NUMBER
+from core.utils import get_published_objects
 
 
 class PostListView(ListView):
@@ -41,12 +42,11 @@ class PostDetailView(DetailView):
         return super().dispatch(request, *args, **kwargs)
 
     def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        context['form'] = CommentForm()
-        context['comments'] = (
-            self.object.comments.select_related('author')
+        return dict(
+            **super().get_context_data(**kwargs),
+            form=CommentForm(),
+            comments=self.object.comments.select_related('author')
         )
-        return context
 
 
 class CategoryListView(ListView):
@@ -61,15 +61,13 @@ class CategoryListView(ListView):
         return Post.postpub.published().count_comment().order()
 
     def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        category = get_object_or_404(
-            Category,
-            slug=self.kwargs[self.slug_url_kwarg],
-            is_published=True
+        return dict(
+            **super().get_context_data(**kwargs),
+            category=get_published_objects(
+                Category,
+                slug=self.kwargs[self.slug_url_kwarg]
+            )
         )
-        context['category'] = category
-
-        return context
 
 
 class PostCreateView(LoginRequiredMixin, CreateView):
@@ -128,17 +126,15 @@ class ProfileView(ListView):
     def get_queryset(self):
         author = get_object_or_404(User, username=self.kwargs['username'])
         return Post.postpub.count_comment().filter(author=author).order()
-        # return Post.objects.annotate(comment_count=Count('comments')
-        #                              ).filter(author=author
-        #                                       ).order_by(POST_ORDER)
 
     def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        context['profile'] = get_object_or_404(
-            User,
-            username=self.kwargs[self.slug_url_kwarg]
+        return dict(
+            **super().get_context_data(**kwargs),
+            profile=get_object_or_404(
+                User,
+                username=self.kwargs[self.slug_url_kwarg]
+            )
         )
-        return context
 
 
 class UserEditView(LoginRequiredMixin, UpdateView):
