@@ -9,25 +9,18 @@ from django.views.generic import (CreateView, DeleteView, DetailView, ListView,
 
 from blog.forms import CommentForm, PostForm
 from blog.models import Category, Comment, Post, User
-from constants import PAGE_NUMBER, POST_ORDER
+from constants import PAGE_NUMBER
 
 
 class PostListView(ListView):
     """Список всех публикаций"""
 
     model = Post
-    ordering = POST_ORDER
     paginate_by = PAGE_NUMBER
     template_name = 'blog/index.html'
 
     def get_queryset(self):
-        return Post.objects.filter(
-            pub_date__lte=timezone.now(),
-            is_published=True,
-            category__is_published=True
-        ).select_related(
-            'category', 'location', 'author'
-        ).annotate(comment_count=Count('comments')).order_by(POST_ORDER)
+        return Post.postpub.published().count_comment().order()
 
 
 class PostDetailView(DetailView):
@@ -38,6 +31,7 @@ class PostDetailView(DetailView):
     pk_url_kwarg = 'post_id'
 
     def dispatch(self, request, *args, **kwargs):
+        # object = self.get_object()
         instance = get_object_or_404(Post, pk=kwargs['post_id'])
         if (
             (not instance.is_published or not instance.category.is_published
@@ -65,13 +59,7 @@ class CategoryListView(ListView):
     template_name = 'blog/category.html'
 
     def get_queryset(self):
-        return Post.objects.prefetch_related(
-            'category', 'location', 'author'
-        ).filter(
-            category__slug=self.kwargs[self.slug_url_kwarg],
-            pub_date__lte=timezone.now(),
-            is_published=True, category__is_published=True
-        ).annotate(comment_count=Count('comments')).order_by(POST_ORDER)
+        return Post.postpub.published().count_comment().order()
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -140,9 +128,10 @@ class ProfileView(ListView):
 
     def get_queryset(self):
         author = get_object_or_404(User, username=self.kwargs['username'])
-        return Post.objects.annotate(comment_count=Count('comments')
-                                     ).filter(author=author
-                                              ).order_by(POST_ORDER)
+        return Post.postpub.count_comment().filter(author=author).order()
+        # return Post.objects.annotate(comment_count=Count('comments')
+        #                              ).filter(author=author
+        #                                       ).order_by(POST_ORDER)
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)

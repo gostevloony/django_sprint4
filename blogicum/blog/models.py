@@ -2,21 +2,44 @@ from datetime import datetime
 
 from django.contrib.auth import get_user_model
 from django.db import models
+from django.db.models import Count
 from django.urls import reverse
 
 from constants import TITLE_MAX_LENGTH
 from core.models import PublCreateModel, PublPublishedModel
 
+from constants import POST_ORDER
+
 User = get_user_model()
+
+
+class PostQueryset(models.QuerySet):
+    def published(self):
+        return self.filter(
+            is_published=True,
+            category__is_published=True,
+            pub_date__lt=datetime.now()
+        ).select_related('category', 'location', 'author')
+
+    def count_comment(self):
+        return self.annotate(comment_count=Count('comments'))
+
+    def order(self):
+        return self.order_by(POST_ORDER)
 
 
 class PostPubManager(models.Manager):
     def get_queryset(self):
-        return super().get_queryset().filter(
-            is_published=True,
-            category__is_published=True,
-            pub_date__lt=datetime.now()
-        )
+        return PostQueryset(self.model)
+
+    def published(self):
+        return self.get_queryset().published()
+
+    def count_comment(self):
+        return self.get_queryset().count_comment()
+
+    def order(self):
+        return self.get_queryset().order()
 
 
 class Post(PublPublishedModel):
