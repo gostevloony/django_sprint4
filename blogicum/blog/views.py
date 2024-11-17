@@ -12,6 +12,10 @@ from constants import PAGE_NUMBER
 from core.utils import get_published_objects
 
 
+# class TestAuthorMixin(UserPassesTestMixin):
+
+
+
 class PostListView(ListView):
     """Список всех публикаций"""
 
@@ -58,7 +62,9 @@ class CategoryListView(ListView):
     template_name = 'blog/category.html'
 
     def get_queryset(self):
-        return Post.postpub.published().count_comment().order()
+        return Post.postpub.published(
+        ).filter(category__slug=self.kwargs['category_slug']
+                 ).count_comment().order()
 
     def get_context_data(self, **kwargs):
         return dict(
