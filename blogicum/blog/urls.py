@@ -9,7 +9,7 @@ urls = [
     path('create/', views.PostCreateView.as_view(), name='create_post'),
     path('edit/', views.PostUpdateView.as_view(), name='edit_post'),
     path('delete/', views.PostDeleteView.as_view(), name='delete_post'),
-    path('<comment/', views.CommentCreateView.as_view(), name='add_comment'),
+    path('comment/', views.CommentCreateView.as_view(), name='add_comment'),
     path(
         'edit_comment/<int:comment_id>/',
         views.CommentUpdateView.as_view(),

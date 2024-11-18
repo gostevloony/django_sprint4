@@ -17,7 +17,7 @@ class TestAuthorMixin(UserPassesTestMixin):
 
     def handle_no_permission(self):
         return redirect(
-            "blog:post_detail",
+            'blog:post_detail',
             post_id=self.kwargs['post_id']
         )
 
@@ -40,14 +40,14 @@ class PostDetailView(DetailView):
     template_name = 'blog/detail.html'
     pk_url_kwarg = 'post_id'
 
-    def get_object(self):
+    def get_object(self, queryset=None):
         post_obj = super().get_object()
-        if post_obj.author != self.request.user:
-            return get_object_or_404(
-                Post.postpub.published(),
-                pk=self.kwargs[self.pk_url_kwarg]
-            )
-        return post_obj
+        if post_obj.author == self.request.user:
+            return post_obj
+        return super().get_object(
+            queryset=Post.postpub.published(
+            ).filter(pk=self.kwargs[self.pk_url_kwarg])
+        )
 
     def get_queryset(self):
         return (
@@ -76,7 +76,7 @@ class CategoryListView(ListView):
 
     def get_queryset(self):
         return Post.postpub.published(
-        ).filter(category__slug=self.kwargs['category_slug']
+        ).filter(category__slug=self.kwargs[self.slug_url_kwarg]
                  ).count_comment().order()
 
     def get_context_data(self, **kwargs):
@@ -142,10 +142,9 @@ class ProfileView(ListView):
             username=self.kwargs[self.slug_url_kwarg]
         )
         queryset = super().get_queryset().filter(author=author)
-        if author.id != self.request.user.id:
+        if author != self.request.user:
             queryset = Post.postpub.published(
-            ).exclude(pub_date__gt=timezone.now()
-                      ).filter(author=author).count_comment().order()
+            ).filter(author=author).count_comment().order()
         return queryset
 
     def get_context_data(self, **kwargs):
@@ -165,7 +164,7 @@ class UserEditView(LoginRequiredMixin, UpdateView):
     fields = ('first_name', 'last_name', 'username', 'email')
     template_name = 'blog/user.html'
 
-    def get_object(self):
+    def get_object(self, queryset=None):
         return self.request.user
 
     def get_success_url(self):
