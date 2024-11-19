@@ -73,12 +73,9 @@ class CategoryListView(ListView):
     def get_queryset(self, queryset=None):
         category = get_object_or_404(
             Category,
-            category__slug=self.kwargs[self.slug_url_kwarg]
+            slug=self.kwargs[self.slug_url_kwarg]
         )
-        return category.posts
-        # return Post.postpub.published(
-        # ).filter(category__slug=self.kwargs[self.slug_url_kwarg]
-        #          ).count_comment().order()
+        return category.posts(manager='postpub').published()
 
     def get_context_data(self, **kwargs):
         return dict(
