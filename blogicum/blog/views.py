@@ -43,10 +43,7 @@ class PostDetailView(DetailView):
         post_obj = super().get_object()
         if post_obj.author == self.request.user:
             return post_obj
-        return super().get_object(
-            queryset=Post.postpub.published(
-            ).filter(pk=self.kwargs[self.pk_url_kwarg])
-        )
+        return super().get_object(queryset=Post.postpub.published())
 
     def get_queryset(self):
         return (
@@ -73,10 +70,15 @@ class CategoryListView(ListView):
     slug_url_kwarg = 'category_slug'
     template_name = 'blog/category.html'
 
-    def get_queryset(self):
-        return Post.postpub.published(
-        ).filter(category__slug=self.kwargs[self.slug_url_kwarg]
-                 ).count_comment().order()
+    def get_queryset(self, queryset=None):
+        category = get_object_or_404(
+            Category,
+            category__slug=self.kwargs[self.slug_url_kwarg]
+        )
+        return category.posts
+        # return Post.postpub.published(
+        # ).filter(category__slug=self.kwargs[self.slug_url_kwarg]
+        #          ).count_comment().order()
 
     def get_context_data(self, **kwargs):
         return dict(
